@@ -1,4 +1,4 @@
-fastapi>=0.115,<0.116
+fastapi>=0.141.1,<0.142
 uvicorn[standard]>=0.30,<0.31
 sqlalchemy>=2.0,<2.1
 geoalchemy2>=0.15,<0.16
