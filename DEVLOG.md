@@ -90,3 +90,167 @@ Dossier de travail  →  Indexé (staged)  →  Committé (local)  →  Poussé 
 
 **Prochaine étape**
 - [ ] 
+
+## 2026-08-07 - Etape 2
+
+**Fait**
+Mise en place de la base de donnée avec Docker. Création et configuration du fichier docker-compose.yml. 
+Premier test avec la fonction db. 
+Initialisation de redis. 
+
+**Décidé**
+Acceptation de l'émulation de db avec l'image officielle pour assurer la fiabilitée dans la durée, malgré la lenteur ajoutée. Ajout de : "platform: linux/amd64  " pour accepter l'avertissement. 
+
+**Bloqué**
+Lors de l'initiatilation avec db, une erreur de compatibilité ressort lié à l'utilisation de Puce Apple silcon. Cela créer un ralentissement du système mais il fonctionne. 
+Lors de l'initialisation de redis, le status healthy ne s'affiche pas causé par l'absence du healthycheck. 
+Blocage lors de l'initalisation de QGIS avec des indication de navigation qui était pour le logiciel QGIS mais confondu avec le logiciel Dbeaver. 
+
+**Appris**
+
+## 2026-08-07 - Etape 3
+
+**Fait**
+Vérification du bon fonctionnement de la base de donnée. Utilisation d'une base test avec trois points (Paris, Alpes et random) visible via QGIS et le fond de carte OpenStreetMap. Après validation elle est supprimé via Dbeaver. 
+
+**Décidé**
+Insérer un fond de carte manuellement pour vérifier la justesse des points tests. Le fond de carte OpenStreetMap n'est pas installé nativement via Brew, il faut donc l'ajouter. 
+
+**Bloqué**
+QGIS ne fournit pas de fond de carte.
+
+**Appris**
+Prendre l'habitude de vérifier la justesse des résultat après l'importe des coordonnées. 
+
+## 2026-08-12 - Etape 4
+**Fait**
+1. fichier requirements.txt : initialiser les outils nécessaires
+2. Dockerfile
+3. config.py : lecture des variables d'environnement, avec valeur replis pour un lancement or DOCKER
+4. db.py : Connection vers PostSQL
+5. __init__.py dans /app/router
+6. health.py : verifie que PostGRE répond avec une sécurité via "SELECT PostGIS_Version()" pour assurer que l'extension est activé et ne pas avoir un retour erreur imprecis. 
+7. main.py : connect l'API au projet et renvoie une confirmation. 
+8. ajout du service "api" dans docker-compose.yml
+
+Construction de l'image via ces commandes : "
+    1. docker compose build api; (Lit ton Dockerfile ligne par ligne : télécharge une base Linux+Python, copie requirements.txt, installe les librairies Python à l'intérieur de l'image (pip install), puis copie ton code (config.py, db.py, etc.) dans cette même image.)
+    2. docker compose up -d; (éxécution du programme python)
+    3. docker compose ps; (affiche de ce qui tourne dans le programme python "healthy")
+    4. docker compose logs api (affiche chaque étape du programme avec l'état final "Application startup complete.")
+    5. curl http://localhost:8000/health/db ()
+
+**Décidé**
+- construction des fichiers (main.py, health.py, config.py, db.py) et explication de chacun d'eux pour apprendre à les connections entre Docker, le réseau, les variables d'environnement, SQLAlchemy, PostGIS. 
+- Système de maillage par dépendance : Walking Skeleton (requête HTTP → API → base de données → réponse )
+
+**Bloqué**
+- Construire l'image de l'API via les différentes commandes de Docker (confusion avec du SQL au lieu du terminale à la racine)
+- enzomignot@macbook-air-de-enzo5 rando-app % curl http://localhost:8000/health/db
+ {"status":"error","error":"name 'version' is not defined"}%     => fonction version n'était pas créait. 
+**Appris**
+Utiliser la dépendance FastAPI et SQLAlchemy
+Verifier la définition de chaque fonction lors d'une erreur. 
+
+## 2026-08-12 - Etape 5
+
+**Fait**
+- initialisation de Makefile dans la racine du projet : suivit des commandes passés
+- création de pyproject.toml : configuration de Ruff pour le formatage des fichier python. 
+
+**Décidé**
+
+**Bloqué**
+
+## 2026-08-13 - Etape 6
+
+**Fait**
+- Schématiser la structure de la base de donnée (Source; POI; Zone réglementaires; Règles Bivouac; Observations)
+- Création du fichier base.py
+- Création du fichier source.py 
+
+- Répondre aux questions suivantes pour vérifier : 
+    Quelles règles s'appliquent au point (6.5, 45.2) ?
+    Quels points d'eau à moins de 2 km, non vérifiés depuis plus d'un an ?
+    D'où vient l'information « ce refuge a 40 places », et sous quelle licence ?
+    Quels POI proviennent d'OSM ? (nécessaire si la licence change un jour)
+    Combien de POI n'ont jamais été vérifiés par un humain ?
+
+- Choix de la structure 1 table ou 4. 
+**Décidé**
+- 1 seule table : 
+    1. travaille une structure non apprise dans les cours classique de SQL
+    2. La sécurité relative au SQL n'est plus présent, c'est-à-dire que Postgres accepte des lettre au lieu d'un nombre normalement attendu. La vérification ne passe plus par la base mais par le programme python directement. Le compromis entre la rigidité d'une base classique et la souplesse imposé par les applications. 
+    3. Apprentissage de la compétence d'interroger à l'intérieur d'un JSON la base. 
+    4. Permet de voir un cas courant dans différents systèmes. 
+
+    - Choix de structurer "licence" avec Enum en ciblant le contenu toujours identique présent. Enum car double protection avec python et base et cohérence avec le schéma. Malgrè une difficulté supérieur par l'ajout ultérieur d'une migration Alembic, le choix est préféré face à Check. 
+
+**Bloqué**
+
+**Appris**
+
+## 2026-08-14 - Etape 6
+**Fait**
+- création du fichier poi.py manuellement
+- création du fichier des fichiers zone.py; observations.py; en collaboration avec claude AI car utilisation de fonctions déjà utilisés et explication de certaines notions différenciantes. 
+
+**Décidé**
+- table poi unique plutôt que quatre tables séparées, avec ton propre raisonnement corrigé en cours de route (le risque n'était pas dans les données, mais dans le code partagé).
+- geography pour les points, geometry pour les zones — critère métrique vs topologique.
+**Bloqué**
+- SyntaxError sur une annotation doublement assignée, 
+- NameError sur des imports oubliés (trois fois, à des endroits différents), 
+- InvalidRequestError sur un __tablename__ manquant, ModuleNotFoundError sur un simple fichier mal nommé (observations.py vs observation.py).
+
+
+
+**Appris**
+- utiliser les class sur python. 
+- Jouer avec la fonction Enum
+- utiliser des fonctions avec créais dans d'autre programme dans un nouveau car présent dans un dossier spécifique
+- Création de chaque fonction pour gérer la base de donnée présente sur une seule table. 
+- Python ne révèle jamais qu'une seule erreur à la fois, celle qui bloque en premier
+- la différence entre une contrainte qui protège réellement (String(255), Enum, ForeignKey) et une contrainte qui ne protège rien (JSONB acceptant "quarante" sans broncher) — et qui, de la base ou de l'API, doit porter la responsabilité dans chaque cas.
+
+## 2026-08-13 - Etape 6
+
+**Fait**
+- Schématiser la structure de la base de donnée (Source; POI; Zone réglementaires; Règles Bivouac; Observations)
+- Création du fichier base.py
+- Création du fichier source.py 
+
+- Répondre aux questions suivantes pour vérifier : 
+    Quelles règles s'appliquent au point (6.5, 45.2) ?
+    Quels points d'eau à moins de 2 km, non vérifiés depuis plus d'un an ?
+    D'où vient l'information « ce refuge a 40 places », et sous quelle licence ?
+    Quels POI proviennent d'OSM ? (nécessaire si la licence change un jour)
+    Combien de POI n'ont jamais été vérifiés par un humain ?
+
+- Choix de la structure 1 table ou 4. 
+**Décidé**
+- 1 seule table : 
+    1. travaille une structure non apprise dans les cours classique de SQL
+    2. La sécurité relative au SQL n'est plus présent, c'est-à-dire que Postgres accepte des lettre au lieu d'un nombre normalement attendu. La vérification ne passe plus par la base mais par le programme python directement. Le compromis entre la rigidité d'une base classique et la souplesse imposé par les applications. 
+    3. Apprentissage de la compétence d'interroger à l'intérieur d'un JSON la base. 
+    4. Permet de voir un cas courant dans différents systèmes. 
+
+    - Choix de structurer "licence" avec Enum en ciblant le contenu toujours identique présent. Enum car double protection avec python et base et cohérence avec le schéma. Malgrè une difficulté supérieur par l'ajout ultérieur d'une migration Alembic, le choix est préféré face à Check. 
+
+**Bloqué**
+
+**Appris**
+
+## 2026-08-14 - Etape 7
+**Fait**
+- Migrations Alembic fonctionnelles pour les cinq tables du schéma, avec extensions PostGIS et index GIST créés automatiquement.
+
+**Décidé**
+- le choix d'une liste blanche plutot qu'une liste noire car la liste noire oblige à connaitre ce qui doit être exclut en amont contrairement à la Blanche qui ne gère que ce qui est dans Base.metadata ce qui élimine le risque d'oubli. 
+- Laisser GeoAlchemy2 gérer l'index car la déclaration manuelle à créer des conflits (duplicateTable). 
+
+**Bloqué**
+- Le déchiffrage des erreurs par CLaude AI nous a permis de relever un fichier migration trop lourd 700 lignes avec des noms de table qui n'existait pas. 
+
+**Appris**
+- --autogénérate compare ne regarde pas uniquement les modèles python utilisés et en déduit le SQL. Il lit l'état complet de la base réelle  et compare à tou ce que Base.metadata déclare. 
